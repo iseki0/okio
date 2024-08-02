@@ -17,38 +17,10 @@ package okio
 
 import java.io.IOException
 import java.io.InputStream
+import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
-import okio.internal.commonClose
-import okio.internal.commonExhausted
-import okio.internal.commonIndexOf
-import okio.internal.commonIndexOfElement
-import okio.internal.commonPeek
-import okio.internal.commonRangeEquals
-import okio.internal.commonRead
-import okio.internal.commonReadAll
-import okio.internal.commonReadByte
-import okio.internal.commonReadByteArray
-import okio.internal.commonReadByteString
-import okio.internal.commonReadDecimalLong
-import okio.internal.commonReadFully
-import okio.internal.commonReadHexadecimalUnsignedLong
-import okio.internal.commonReadInt
-import okio.internal.commonReadIntLe
-import okio.internal.commonReadLong
-import okio.internal.commonReadLongLe
-import okio.internal.commonReadShort
-import okio.internal.commonReadShortLe
-import okio.internal.commonReadUtf8
-import okio.internal.commonReadUtf8CodePoint
-import okio.internal.commonReadUtf8Line
-import okio.internal.commonReadUtf8LineStrict
-import okio.internal.commonRequest
-import okio.internal.commonRequire
-import okio.internal.commonSelect
-import okio.internal.commonSkip
-import okio.internal.commonTimeout
-import okio.internal.commonToString
+import okio.internal.*
 
 internal actual class RealBufferedSource actual constructor(
   @JvmField actual val source: Source,
@@ -174,6 +146,20 @@ internal actual class RealBufferedSource actual constructor(
       override fun close() = this@RealBufferedSource.close()
 
       override fun toString() = "${this@RealBufferedSource}.inputStream()"
+
+      override fun transferTo(out: OutputStream): Long {
+        if (closed) throw IOException("closed")
+        var count = 0L
+        while (true) {
+          if (buffer.size == 0L) {
+            val read = source.read(buffer, Segment.SIZE.toLong())
+            if (read == -1L) break
+          }
+          count += buffer.size
+          buffer.writeTo(out)
+        }
+        return count
+      }
     }
   }
 
